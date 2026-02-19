@@ -23,25 +23,22 @@
         <p class="text-sm text-slate-500">自訂底台與純手動玩家名單</p>
     </header>
 
-    <!-- 底台設定與玩家管理 -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        <!-- 底台設定 -->
         <section class="bg-white rounded-xl shadow-sm p-5 border border-slate-100">
             <h2 class="text-lg font-bold mb-4 flex items-center">⚙️ 牌局設定</h2>
             <div class="flex gap-4">
                 <div class="flex-1">
                     <label class="block text-sm font-medium text-slate-700 mb-1">底</label>
-                    <input type="number" id="baseAmount" value="300" min="0" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500" onchange="updateSettings()">
+                    <input type="number" id="baseAmount" value="30" min="0" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500" onchange="updateSettings()">
                 </div>
                 <div class="flex-1">
                     <label class="block text-sm font-medium text-slate-700 mb-1">一台</label>
-                    <input type="number" id="pointAmount" value="100" min="0" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500" onchange="updateSettings()">
+                    <input type="number" id="pointAmount" value="10" min="0" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500" onchange="updateSettings()">
                 </div>
             </div>
-            <p class="text-xs text-slate-500 mt-2 text-center" id="settingDisplay">目前設定：300 底 / 100 台</p>
+            <p class="text-xs text-slate-500 mt-2 text-center" id="settingDisplay">目前設定：30 底 / 10 台</p>
         </section>
 
-        <!-- 玩家管理 -->
         <section class="bg-white rounded-xl shadow-sm p-5 border border-slate-100">
             <h2 class="text-lg font-bold mb-4 flex items-center">👥 新增玩家</h2>
             <div class="flex gap-2">
@@ -52,19 +49,15 @@
         </section>
     </div>
 
-    <!-- 玩家列表展示 -->
     <section class="bg-white rounded-xl shadow-sm p-5 mb-6 border border-slate-100">
          <h2 class="text-lg font-bold mb-4 flex items-center">👑 目前玩家</h2>
         <div id="playersGrid" class="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <!-- 玩家卡片動態生成 -->
-        </div>
+            </div>
     </section>
 
-    <!-- 記帳面板區塊 -->
     <section class="bg-white rounded-xl shadow-sm p-5 mb-6 border border-slate-100">
         <h2 class="text-lg font-bold mb-4">📝 記帳面板</h2>
         
-        <!-- 語音輸入 -->
         <div class="mb-6 p-4 bg-red-50 rounded-lg text-center">
             <button id="voiceBtn" onclick="toggleVoice()" class="bg-red-500 text-white w-16 h-16 rounded-full text-2xl shadow-lg hover:bg-red-600 transition flex items-center justify-center mx-auto mb-3 btn-disabled" disabled>
                 🎙️
@@ -72,7 +65,6 @@
             <p id="voiceStatus" class="text-sm text-red-700 font-medium">請先新增玩家後啟用</p>
         </div>
 
-        <!-- 手動輸入 -->
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4 items-end">
             <div class="col-span-1 md:col-span-1">
                 <label class="block text-sm font-medium text-slate-700 mb-1">贏家 (胡/自摸)</label>
@@ -91,13 +83,12 @@
             </div>
             <div class="col-span-1 md:col-span-1 text-right md:text-center pb-2">
                 <span class="text-xs text-slate-500 block">單家應付金額</span>
-                <span id="previewAmount" class="text-xl font-bold text-red-600">400</span>
+                <span id="previewAmount" class="text-xl font-bold text-red-600">40</span>
             </div>
         </div>
         <button id="recordBtn" onclick="manualRecord()" class="w-full bg-red-600 text-white py-3 rounded-lg font-bold hover:bg-red-700 transition btn-disabled" disabled>確認記帳</button>
     </section>
 
-    <!-- 歷史紀錄區塊 -->
     <section class="bg-white rounded-xl shadow-sm p-5 border border-slate-100">
         <div class="flex justify-between items-center mb-4">
             <h2 class="text-lg font-bold">📜 交易紀錄</h2>
@@ -109,11 +100,23 @@
     </section>
 
     <script>
-        // 初始化為空陣列
-        let players = [];
-        let history = [];
-        let baseAmount = 300;
-        let pointAmount = 100;
+        // 初始化：優先從 localStorage 讀取資料，若無則給予預設值 (改為 30底/10台)
+        let players = JSON.parse(localStorage.getItem('mahjong_players')) || [];
+        let history = JSON.parse(localStorage.getItem('mahjong_history')) || [];
+        let baseAmount = parseInt(localStorage.getItem('mahjong_base')) || 30;
+        let pointAmount = parseInt(localStorage.getItem('mahjong_point')) || 10;
+
+        // 將讀取到的設定值回填到輸入框
+        document.getElementById('baseAmount').value = baseAmount;
+        document.getElementById('pointAmount').value = pointAmount;
+
+        // 建立儲存資料的通用函式
+        function saveData() {
+            localStorage.setItem('mahjong_players', JSON.stringify(players));
+            localStorage.setItem('mahjong_history', JSON.stringify(history));
+            localStorage.setItem('mahjong_base', baseAmount);
+            localStorage.setItem('mahjong_point', pointAmount);
+        }
 
         // 語音辨識初始化
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -177,6 +180,7 @@
             pointAmount = parseInt(document.getElementById('pointAmount').value) || 0;
             document.getElementById('settingDisplay').innerText = `目前設定：${baseAmount} 底 / ${pointAmount} 台`;
             calculatePreview();
+            saveData(); 
         }
 
         function calculatePreview() {
@@ -284,6 +288,7 @@
             players.push({ id: generateId(), name: name, score: 0 });
             input.value = '';
             renderPlayers();
+            saveData(); 
         }
 
         function removePlayer(id) {
@@ -293,6 +298,7 @@
             }
             players = players.filter(p => p.id !== id);
             renderPlayers();
+            saveData(); 
         }
 
         function processTransaction(winnerId, loserId, tais) {
@@ -330,6 +336,7 @@
             history.unshift({ text: logText, time: time });
             renderPlayers();
             renderHistory();
+            saveData(); 
             return true;
         }
 
@@ -351,6 +358,7 @@
                 history = [];
                 renderPlayers();
                 renderHistory();
+                saveData(); 
             }
         }
 
@@ -407,7 +415,7 @@
             }
         }
 
-        // 初始化
+        // 頁面載入時的初始化執行
         updateSettings();
         renderPlayers();
         renderHistory();
