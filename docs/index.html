@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>專業麻將記帳系統 (純自訂玩家)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .recording { animation: pulse 1.5s infinite; }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+        .btn-disabled { opacity: 0.5; cursor: not-allowed; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 p-4 md:p-8 max-w-2xl mx-auto">
+
+    <header class="text-center mb-8">
+        <h1 class="text-3xl font-bold text-red-600 mb-2">🀄 專業麻將記帳系統</h1>
+        <p class="text-sm text-slate-500">自訂底台與純手動玩家名單</p>
+    </header>
+
+    <!-- 底台設定與玩家管理 -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <!-- 底台設定 -->
+        <section class="bg-white rounded-xl shadow-sm p-5 border border-slate-100">
+            <h2 class="text-lg font-bold mb-4 flex items-center">⚙️ 牌局設定</h2>
+            <div class="flex gap-4">
+                <div class="flex-1">
+                    <label class="block text-sm font-medium text-slate-700 mb-1">底</label>
+                    <input type="number" id="baseAmount" value="300" min="0" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500" onchange="updateSettings()">
+                </div>
+                <div class="flex-1">
+                    <label class="block text-sm font-medium text-slate-700 mb-1">一台</label>
+                    <input type="number" id="pointAmount" value="100" min="0" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500" onchange="updateSettings()">
+                </div>
+            </div>
+            <p class="text-xs text-slate-500 mt-2 text-center" id="settingDisplay">目前設定：300 底 / 100 台</p>
+        </section>
+
+        <!-- 玩家管理 -->
+        <section class="bg-white rounded-xl shadow-sm p-5 border border-slate-100">
+            <h2 class="text-lg font-bold mb-4 flex items-center">👥 新增玩家</h2>
+            <div class="flex gap-2">
+                <input type="text" id="newPlayerName" placeholder="輸入玩家姓名..." class="flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500" onkeypress="handleKeyPress(event)">
+                <button onclick="addPlayer()" class="bg-slate-800 text-white px-3 py-2 rounded-lg font-medium hover:bg-slate-700 transition">新增</button>
+            </div>
+            <p class="text-xs text-slate-500 mt-2">請至少新增 2 名玩家以啟用記帳功能</p>
+        </section>
+    </div>
+
+    <!-- 玩家列表展示 -->
+    <section class="bg-white rounded-xl shadow-sm p-5 mb-6 border border-slate-100">
+         <h2 class="text-lg font-bold mb-4 flex items-center">👑 目前玩家</h2>
+        <div id="playersGrid" class="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <!-- 玩家卡片動態生成 -->
+        </div>
+    </section>
+
+    <!-- 記帳面板區塊 -->
+    <section class="bg-white rounded-xl shadow-sm p-5 mb-6 border border-slate-100">
+        <h2 class="text-lg font-bold mb-4">📝 記帳面板</h2>
+        
+        <!-- 語音輸入 -->
+        <div class="mb-6 p-4 bg-red-50 rounded-lg text-center">
+            <button id="voiceBtn" onclick="toggleVoice()" class="bg-red-500 text-white w-16 h-16 rounded-full text-2xl shadow-lg hover:bg-red-600 transition flex items-center justify-center mx-auto mb-3 btn-disabled" disabled>
+                🎙️
+            </button>
+            <p id="voiceStatus" class="text-sm text-red-700 font-medium">請先新增玩家後啟用</p>
+        </div>
+
+        <!-- 手動輸入 -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4 items-end">
+            <div class="col-span-1 md:col-span-1">
+                <label class="block text-sm font-medium text-slate-700 mb-1">贏家 (胡/自摸)</label>
+                <select id="winnerSelect" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-slate-50" disabled></select>
+            </div>
+            <div class="col-span-1 md:col-span-1">
+                <label class="block text-sm font-medium text-slate-700 mb-1">輸家 (放槍)</label>
+                <select id="loserSelect" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-slate-50" disabled></select>
+            </div>
+            <div class="col-span-1 md:col-span-1">
+                <label class="block text-sm font-medium text-slate-700 mb-1">贏了幾台？</label>
+                <div class="flex items-center gap-2">
+                    <input type="number" id="taiInput" min="0" value="1" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500" oninput="calculatePreview()">
+                    <span class="text-sm text-slate-600">台</span>
+                </div>
+            </div>
+            <div class="col-span-1 md:col-span-1 text-right md:text-center pb-2">
+                <span class="text-xs text-slate-500 block">單家應付金額</span>
+                <span id="previewAmount" class="text-xl font-bold text-red-600">400</span>
+            </div>
+        </div>
+        <button id="recordBtn" onclick="manualRecord()" class="w-full bg-red-600 text-white py-3 rounded-lg font-bold hover:bg-red-700 transition btn-disabled" disabled>確認記帳</button>
+    </section>
+
+    <!-- 歷史紀錄區塊 -->
+    <section class="bg-white rounded-xl shadow-sm p-5 border border-slate-100">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-lg font-bold">📜 交易紀錄</h2>
+            <button onclick="clearHistory()" class="text-sm text-slate-400 hover:text-red-500 transition">清空紀錄</button>
+        </div>
+        <ul id="historyLog" class="space-y-2 max-h-60 overflow-y-auto pr-2">
+            <li class="text-slate-400 text-sm text-center py-4">目前尚無紀錄</li>
+        </ul>
+    </section>
+
+    <script>
+        // 初始化為空陣列
+        let players = [];
+        let history = [];
+        let baseAmount = 300;
+        let pointAmount = 100;
+
+        // 語音辨識初始化
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let recognition = null;
+        let isRecording = false;
+
+        if (SpeechRecognition) {
+            recognition = new SpeechRecognition();
+            recognition.lang = 'zh-TW';
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 1;
+
+            recognition.onstart = function() {
+                isRecording = true;
+                const btn = document.getElementById('voiceBtn');
+                btn.classList.add('recording');
+                document.getElementById('voiceStatus').innerText = "聆聽中... 請說話 (例如：小明自摸兩台)";
+            };
+
+            recognition.onresult = function(event) {
+                const transcript = event.results[0][0].transcript;
+                document.getElementById('voiceStatus').innerText = `辨識結果：「${transcript}」`;
+                processVoiceCommand(transcript);
+            };
+
+            recognition.onerror = function(event) {
+                document.getElementById('voiceStatus').innerText = "語音辨識錯誤，請重試或手動輸入。";
+                stopVoiceUI();
+            };
+
+            recognition.onend = function() {
+                stopVoiceUI();
+            };
+        }
+
+        function toggleVoice() {
+            if (!recognition || players.length < 2) return;
+            if (isRecording) {
+                recognition.stop();
+            } else {
+                recognition.start();
+            }
+        }
+
+        function stopVoiceUI() {
+            isRecording = false;
+            document.getElementById('voiceBtn').classList.remove('recording');
+            setTimeout(() => {
+                if(!isRecording && players.length >= 2) {
+                    document.getElementById('voiceStatus').innerText = "點擊麥克風開始語音記帳";
+                }
+            }, 4000);
+        }
+
+        function generateId() {
+            return Math.random().toString(36).substr(2, 9);
+        }
+
+        function updateSettings() {
+            baseAmount = parseInt(document.getElementById('baseAmount').value) || 0;
+            pointAmount = parseInt(document.getElementById('pointAmount').value) || 0;
+            document.getElementById('settingDisplay').innerText = `目前設定：${baseAmount} 底 / ${pointAmount} 台`;
+            calculatePreview();
+        }
+
+        function calculatePreview() {
+            const tais = parseInt(document.getElementById('taiInput').value) || 0;
+            const total = baseAmount + (pointAmount * tais);
+            document.getElementById('previewAmount').innerText = total;
+            return total;
+        }
+
+        function updateUIState() {
+            const isReady = players.length >= 2;
+            const winnerSelect = document.getElementById('winnerSelect');
+            const loserSelect = document.getElementById('loserSelect');
+            const recordBtn = document.getElementById('recordBtn');
+            const voiceBtn = document.getElementById('voiceBtn');
+            const voiceStatus = document.getElementById('voiceStatus');
+
+            winnerSelect.disabled = !isReady;
+            loserSelect.disabled = !isReady;
+            recordBtn.disabled = !isReady;
+            
+            if (isReady) {
+                winnerSelect.classList.remove('bg-slate-50');
+                loserSelect.classList.remove('bg-slate-50');
+                recordBtn.classList.remove('btn-disabled');
+                
+                if (SpeechRecognition) {
+                    voiceBtn.disabled = false;
+                    voiceBtn.classList.remove('btn-disabled', 'opacity-50', 'cursor-not-allowed');
+                    voiceStatus.innerText = "點擊麥克風開始語音記帳";
+                }
+            } else {
+                winnerSelect.classList.add('bg-slate-50');
+                loserSelect.classList.add('bg-slate-50');
+                recordBtn.classList.add('btn-disabled');
+                voiceBtn.disabled = true;
+                voiceBtn.classList.add('btn-disabled');
+                voiceStatus.innerText = players.length === 0 ? "請先新增玩家後啟用" : "請至少新增兩名玩家";
+            }
+        }
+
+        function renderPlayers() {
+            const grid = document.getElementById('playersGrid');
+            const winnerSelect = document.getElementById('winnerSelect');
+            const loserSelect = document.getElementById('loserSelect');
+            
+            const currentWinner = winnerSelect.value;
+            const currentLoser = loserSelect.value;
+
+            grid.innerHTML = '';
+            
+            if (players.length === 0) {
+                grid.innerHTML = '<div class="col-span-2 md:col-span-4 text-center text-slate-400 py-6 border-2 border-dashed border-slate-200 rounded-lg">尚未加入任何玩家</div>';
+                winnerSelect.innerHTML = '<option value="">請先新增</option>';
+                loserSelect.innerHTML = '<option value="">請先新增</option>';
+            } else {
+                winnerSelect.innerHTML = '';
+                loserSelect.innerHTML = '<option value="all">一家贏，其餘全輸 (自摸)</option>';
+
+                players.forEach(p => {
+                    grid.innerHTML += `
+                        <div class="bg-slate-50 p-3 rounded-lg border text-center relative group">
+                            <button onclick="removePlayer('${p.id}')" class="absolute -top-2 -right-2 bg-red-100 text-red-600 rounded-full w-6 h-6 text-xs hidden group-hover:block hover:bg-red-200">✕</button>
+                            <div class="font-bold text-slate-700 truncate" title="${p.name}">${p.name}</div>
+                            <div class="text-xl font-bold mt-1 ${p.score >= 0 ? 'text-green-600' : 'text-red-600'}">${p.score}</div>
+                        </div>
+                    `;
+                    winnerSelect.innerHTML += `<option value="${p.id}">${p.name}</option>`;
+                    loserSelect.innerHTML += `<option value="${p.id}">${p.name}</option>`;
+                });
+
+                if (currentWinner && players.find(p => p.id === currentWinner)) winnerSelect.value = currentWinner;
+                if (currentLoser && (currentLoser === 'all' || players.find(p => p.id === currentLoser))) loserSelect.value = currentLoser;
+            }
+
+            updateUIState();
+        }
+
+        function renderHistory() {
+            const logUl = document.getElementById('historyLog');
+            if (history.length === 0) {
+                logUl.innerHTML = '<li class="text-slate-400 text-sm text-center py-4">目前尚無紀錄</li>';
+                return;
+            }
+            logUl.innerHTML = history.map(h => `
+                <li class="bg-slate-50 p-3 rounded-lg border text-sm text-slate-700 flex justify-between items-center">
+                    <span>${h.text}</span>
+                    <span class="text-xs text-slate-400">${h.time}</span>
+                </li>
+            `).join('');
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') addPlayer();
+        }
+
+        function addPlayer() {
+            const input = document.getElementById('newPlayerName');
+            const name = input.value.trim();
+            if (!name) return;
+            if (players.find(p => p.name === name)) {
+                alert("玩家名稱已存在！");
+                return;
+            }
+            players.push({ id: generateId(), name: name, score: 0 });
+            input.value = '';
+            renderPlayers();
+        }
+
+        function removePlayer(id) {
+            const p = players.find(x => x.id === id);
+            if (p.score !== 0 && !confirm(`玩家 [${p.name}] 尚有分數 (${p.score})，確定要移除嗎？`)) {
+                return;
+            }
+            players = players.filter(p => p.id !== id);
+            renderPlayers();
+        }
+
+        function processTransaction(winnerId, loserId, tais) {
+            if (players.length < 2) {
+                alert("玩家人數不足！");
+                return false;
+            }
+            if (isNaN(tais) || tais < 0) {
+                alert("無效的台數！");
+                return false;
+            }
+
+            const amountPerPerson = baseAmount + (pointAmount * tais);
+            const winner = players.find(p => p.id === winnerId);
+            let logText = "";
+
+            if (loserId === "all") {
+                const activePlayers = players.filter(p => p.id !== winnerId);
+                const totalWin = amountPerPerson * activePlayers.length;
+                winner.score += totalWin;
+                activePlayers.forEach(p => p.score -= amountPerPerson);
+                logText = `【自摸】${winner.name} ${tais}台，贏得 ${totalWin} 點 (每家 ${amountPerPerson})`;
+            } else {
+                if (winnerId === loserId) {
+                    alert("贏家和輸家不能是同一人！");
+                    return false;
+                }
+                const loser = players.find(p => p.id === loserId);
+                winner.score += amountPerPerson;
+                loser.score -= amountPerPerson;
+                logText = `【放槍】${loser.name} 放槍給 ${winner.name} ${tais}台，支付 ${amountPerPerson} 點`;
+            }
+
+            const time = new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' });
+            history.unshift({ text: logText, time: time });
+            renderPlayers();
+            renderHistory();
+            return true;
+        }
+
+        function manualRecord() {
+            const winnerId = document.getElementById('winnerSelect').value;
+            const loserId = document.getElementById('loserSelect').value;
+            const tais = parseInt(document.getElementById('taiInput').value);
+            
+            if (processTransaction(winnerId, loserId, tais)) {
+                 document.getElementById('taiInput').value = 1;
+                 calculatePreview();
+            }
+        }
+
+        function clearHistory() {
+            if (history.length === 0) return;
+            if (confirm("確定要清空所有紀錄並將分數歸零嗎？")) {
+                players.forEach(p => p.score = 0);
+                history = [];
+                renderPlayers();
+                renderHistory();
+            }
+        }
+
+        function processVoiceCommand(text) {
+            if (players.length < 2) return;
+            
+            const numMap = { '一': 1, '二': 2, '兩': 2, '三': 3, '四': 4, '五': 5, '六': 6, '七': 7, '八': 8, '九': 9, '十': 10 };
+            let tais = null;
+            
+            const numMatch = text.match(/\d+/);
+            if (numMatch) {
+                tais = parseInt(numMatch[0]);
+            } else {
+                for (let key in numMap) {
+                    if (text.includes(key + "台") || text.includes(key + "臺") || text.includes(key + "台")) {
+                        tais = numMap[key];
+                        break;
+                    }
+                }
+            }
+
+            if (tais === null) {
+                alert("無法從語音中辨識『台數』，請確認有說出數字（如：兩台、3台）。");
+                return;
+            }
+
+            const mentioned = players.filter(p => text.includes(p.name));
+
+            if (text.includes("自摸")) {
+                if (mentioned.length >= 1) {
+                    processTransaction(mentioned[0].id, "all", tais);
+                } else {
+                    alert("無法辨識自摸的玩家是誰。");
+                }
+            } else if (text.includes("放槍") || text.includes("給") || text.includes("打給")) {
+                if (mentioned.length >= 2) {
+                    const idx1 = text.indexOf(mentioned[0].name);
+                    const idx2 = text.indexOf(mentioned[1].name);
+                    
+                    let loser, winner;
+                    if (idx1 < idx2) {
+                        loser = mentioned[0];
+                        winner = mentioned[1];
+                    } else {
+                        loser = mentioned[1];
+                        winner = mentioned[0];
+                    }
+                    processTransaction(winner.id, loser.id, tais);
+                } else {
+                    alert("無法同時辨識出放槍者與胡牌者。");
+                }
+            } else {
+                alert("無法解析指令動作，請明確說出「自摸」或「放槍給」。");
+            }
+        }
+
+        // 初始化
+        updateSettings();
+        renderPlayers();
+        renderHistory();
+    </script>
+</body>
+</html>
