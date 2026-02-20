@@ -45,12 +45,15 @@
                 <input type="text" id="newPlayerName" placeholder="輸入玩家姓名..." class="flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500" onkeypress="handleKeyPress(event)">
                 <button onclick="addPlayer()" class="bg-slate-800 text-white px-3 py-2 rounded-lg font-medium hover:bg-slate-700 transition">新增</button>
             </div>
-            <p class="text-xs text-slate-500 mt-2">請至少新增 2 名玩家以啟用記帳功能</p>
+            <p class="text-xs text-slate-500 mt-2">請新增玩家並在下方勾選 4 位上場</p>
         </section>
     </div>
 
     <section class="bg-white rounded-xl shadow-sm p-5 mb-6 border border-slate-100">
-         <h2 class="text-lg font-bold mb-4 flex items-center">👑 目前玩家</h2>
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-lg font-bold flex items-center">👑 目前玩家</h2>
+            <span class="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-md font-medium">請勾選上場玩家 (最多4人)</span>
+        </div>
         <div id="playersGrid" class="grid grid-cols-2 md:grid-cols-4 gap-3">
             </div>
     </section>
@@ -62,7 +65,7 @@
             <button id="voiceBtn" onclick="toggleVoice()" class="bg-red-500 text-white w-16 h-16 rounded-full text-2xl shadow-lg hover:bg-red-600 transition flex items-center justify-center mx-auto mb-3 btn-disabled" disabled>
                 🎙️
             </button>
-            <p id="voiceStatus" class="text-sm text-red-700 font-medium">請先新增玩家後啟用</p>
+            <p id="voiceStatus" class="text-sm text-red-700 font-medium">請先勾選上場玩家後啟用</p>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4 items-end">
@@ -100,25 +103,24 @@
     </section>
 
     <script>
-        // 初始化：優先從 localStorage 讀取資料，若無則給予預設值 (改為 30底/10台)
+        // 初始化：優先從 localStorage 讀取資料
         let players = JSON.parse(localStorage.getItem('mahjong_players')) || [];
+        let activePlayerIds = JSON.parse(localStorage.getItem('mahjong_active_players')) || [];
         let history = JSON.parse(localStorage.getItem('mahjong_history')) || [];
         let baseAmount = parseInt(localStorage.getItem('mahjong_base')) || 30;
         let pointAmount = parseInt(localStorage.getItem('mahjong_point')) || 10;
 
-        // 將讀取到的設定值回填到輸入框
         document.getElementById('baseAmount').value = baseAmount;
         document.getElementById('pointAmount').value = pointAmount;
 
-        // 建立儲存資料的通用函式
         function saveData() {
             localStorage.setItem('mahjong_players', JSON.stringify(players));
+            localStorage.setItem('mahjong_active_players', JSON.stringify(activePlayerIds));
             localStorage.setItem('mahjong_history', JSON.stringify(history));
             localStorage.setItem('mahjong_base', baseAmount);
             localStorage.setItem('mahjong_point', pointAmount);
         }
 
-        // 語音辨識初始化
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         let recognition = null;
         let isRecording = false;
@@ -153,7 +155,7 @@
         }
 
         function toggleVoice() {
-            if (!recognition || players.length < 2) return;
+            if (!recognition || activePlayerIds.length < 2) return;
             if (isRecording) {
                 recognition.stop();
             } else {
@@ -165,7 +167,7 @@
             isRecording = false;
             document.getElementById('voiceBtn').classList.remove('recording');
             setTimeout(() => {
-                if(!isRecording && players.length >= 2) {
+                if(!isRecording && activePlayerIds.length >= 2) {
                     document.getElementById('voiceStatus').innerText = "點擊麥克風開始語音記帳";
                 }
             }, 4000);
@@ -190,8 +192,23 @@
             return total;
         }
 
+        function toggleActivePlayer(id) {
+            if (activePlayerIds.includes(id)) {
+                activePlayerIds = activePlayerIds.filter(pid => pid !== id);
+            } else {
+                if (activePlayerIds.length >= 4) {
+                    alert("最多只能勾選 4 位上場玩家！");
+                    renderPlayers(); // 刷新以重置 UI 勾選狀態
+                    return;
+                }
+                activePlayerIds.push(id);
+            }
+            saveData();
+            renderPlayers();
+        }
+
         function updateUIState() {
-            const isReady = players.length >= 2;
+            const isReady = activePlayerIds.length >= 2;
             const winnerSelect = document.getElementById('winnerSelect');
             const loserSelect = document.getElementById('loserSelect');
             const recordBtn = document.getElementById('recordBtn');
@@ -218,7 +235,7 @@
                 recordBtn.classList.add('btn-disabled');
                 voiceBtn.disabled = true;
                 voiceBtn.classList.add('btn-disabled');
-                voiceStatus.innerText = players.length === 0 ? "請先新增玩家後啟用" : "請至少新增兩名玩家";
+                voiceStatus.innerText = "請先勾選至少兩名上場玩家";
             }
         }
 
@@ -237,23 +254,36 @@
                 winnerSelect.innerHTML = '<option value="">請先新增</option>';
                 loserSelect.innerHTML = '<option value="">請先新增</option>';
             } else {
-                winnerSelect.innerHTML = '';
-                loserSelect.innerHTML = '<option value="all">一家贏，其餘全輸 (自摸)</option>';
-
+                // 生成玩家卡片 (包含勾選框)
                 players.forEach(p => {
+                    const isActive = activePlayerIds.includes(p.id);
                     grid.innerHTML += `
-                        <div class="bg-slate-50 p-3 rounded-lg border text-center relative group">
-                            <button onclick="removePlayer('${p.id}')" class="absolute -top-2 -right-2 bg-red-100 text-red-600 rounded-full w-6 h-6 text-xs hidden group-hover:block hover:bg-red-200">✕</button>
-                            <div class="font-bold text-slate-700 truncate" title="${p.name}">${p.name}</div>
+                        <div class="bg-slate-50 p-3 rounded-lg border text-center relative group transition-all ${isActive ? 'ring-2 ring-red-500 bg-red-50/30' : ''}">
+                            <input type="checkbox" class="absolute top-2 left-2 w-4 h-4 cursor-pointer accent-red-600" onchange="toggleActivePlayer('${p.id}')" ${isActive ? 'checked' : ''} title="勾選上場">
+                            <button onclick="removePlayer('${p.id}')" class="absolute -top-2 -right-2 bg-red-100 text-red-600 rounded-full w-6 h-6 text-xs hidden group-hover:block hover:bg-red-200 shadow-sm z-10">✕</button>
+                            <div class="font-bold text-slate-700 truncate mt-1" title="${p.name}">${p.name}</div>
                             <div class="text-xl font-bold mt-1 ${p.score >= 0 ? 'text-green-600' : 'text-red-600'}">${p.score}</div>
                         </div>
                     `;
-                    winnerSelect.innerHTML += `<option value="${p.id}">${p.name}</option>`;
-                    loserSelect.innerHTML += `<option value="${p.id}">${p.name}</option>`;
                 });
 
-                if (currentWinner && players.find(p => p.id === currentWinner)) winnerSelect.value = currentWinner;
-                if (currentLoser && (currentLoser === 'all' || players.find(p => p.id === currentLoser))) loserSelect.value = currentLoser;
+                // 只將「上場玩家」加入選單
+                const activePlayersList = players.filter(p => activePlayerIds.includes(p.id));
+                
+                if (activePlayersList.length === 0) {
+                    winnerSelect.innerHTML = '<option value="">請勾選上場玩家</option>';
+                    loserSelect.innerHTML = '<option value="">請勾選上場玩家</option>';
+                } else {
+                    winnerSelect.innerHTML = '';
+                    loserSelect.innerHTML = '<option value="all">一家贏，其餘全輸 (自摸)</option>';
+                    activePlayersList.forEach(p => {
+                        winnerSelect.innerHTML += `<option value="${p.id}">${p.name}</option>`;
+                        loserSelect.innerHTML += `<option value="${p.id}">${p.name}</option>`;
+                    });
+                }
+
+                if (currentWinner && activePlayersList.find(p => p.id === currentWinner)) winnerSelect.value = currentWinner;
+                if (currentLoser && (currentLoser === 'all' || activePlayersList.find(p => p.id === currentLoser))) loserSelect.value = currentLoser;
             }
 
             updateUIState();
@@ -285,7 +315,15 @@
                 alert("玩家名稱已存在！");
                 return;
             }
-            players.push({ id: generateId(), name: name, score: 0 });
+            
+            const newId = generateId();
+            players.push({ id: newId, name: name, score: 0 });
+            
+            // 如果目前上場人數不到 4 人，自動幫新玩家打勾
+            if (activePlayerIds.length < 4) {
+                activePlayerIds.push(newId);
+            }
+            
             input.value = '';
             renderPlayers();
             saveData(); 
@@ -297,13 +335,14 @@
                 return;
             }
             players = players.filter(p => p.id !== id);
+            activePlayerIds = activePlayerIds.filter(pid => pid !== id);
             renderPlayers();
             saveData(); 
         }
 
         function processTransaction(winnerId, loserId, tais) {
-            if (players.length < 2) {
-                alert("玩家人數不足！");
+            if (activePlayerIds.length < 2) {
+                alert("上場人數不足！");
                 return false;
             }
             if (isNaN(tais) || tais < 0) {
@@ -316,10 +355,12 @@
             let logText = "";
 
             if (loserId === "all") {
-                const activePlayers = players.filter(p => p.id !== winnerId);
-                const totalWin = amountPerPerson * activePlayers.length;
+                // 嚴格過濾：找出「有上場」且「不是贏家」的玩家來付錢
+                const payingPlayers = players.filter(p => activePlayerIds.includes(p.id) && p.id !== winnerId);
+                const totalWin = amountPerPerson * payingPlayers.length;
+                
                 winner.score += totalWin;
-                activePlayers.forEach(p => p.score -= amountPerPerson);
+                payingPlayers.forEach(p => p.score -= amountPerPerson);
                 logText = `【自摸】${winner.name} ${tais}台，贏得 ${totalWin} 點 (每家 ${amountPerPerson})`;
             } else {
                 if (winnerId === loserId) {
@@ -363,7 +404,7 @@
         }
 
         function processVoiceCommand(text) {
-            if (players.length < 2) return;
+            if (activePlayerIds.length < 2) return;
             
             const numMap = { '一': 1, '二': 2, '兩': 2, '三': 3, '四': 4, '五': 5, '六': 6, '七': 7, '八': 8, '九': 9, '十': 10 };
             let tais = null;
@@ -385,13 +426,15 @@
                 return;
             }
 
-            const mentioned = players.filter(p => text.includes(p.name));
+            // 語音辨識也嚴格限制在「有上場」的玩家名單內匹配
+            const activePlayersList = players.filter(p => activePlayerIds.includes(p.id));
+            const mentioned = activePlayersList.filter(p => text.includes(p.name));
 
             if (text.includes("自摸")) {
                 if (mentioned.length >= 1) {
                     processTransaction(mentioned[0].id, "all", tais);
                 } else {
-                    alert("無法辨識自摸的玩家是誰。");
+                    alert("無法辨識自摸的玩家是誰，或該玩家未勾選上場。");
                 }
             } else if (text.includes("放槍") || text.includes("給") || text.includes("打給")) {
                 if (mentioned.length >= 2) {
@@ -408,7 +451,7 @@
                     }
                     processTransaction(winner.id, loser.id, tais);
                 } else {
-                    alert("無法同時辨識出放槍者與胡牌者。");
+                    alert("無法同時辨識出放槍者與胡牌者，或有玩家未勾選上場。");
                 }
             } else {
                 alert("無法解析指令動作，請明確說出「自摸」或「放槍給」。");
