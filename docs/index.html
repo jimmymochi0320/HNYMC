@@ -3,115 +3,109 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>專業麻將記帳系統 (純自訂玩家)</title>
+    <title>專業麻將記帳系統 (UI優化版)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        .recording { animation: pulse 1.5s infinite; }
-        @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
-            70% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
-        }
         .btn-disabled { opacity: 0.5; cursor: not-allowed; }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 p-4 md:p-8 max-w-2xl mx-auto">
 
     <header class="text-center mb-8">
-        <h1 class="text-3xl font-bold text-red-600 mb-2">🀄 專業麻將記帳系統</h1>
-        <p class="text-sm text-slate-500">支援自訂玩家、自動計算莊家與連莊台數</p>
+        <h1 class="text-3xl font-bold text-slate-800 mb-2">🀄 專業麻將記帳系統</h1>
+        <p class="text-sm text-slate-500">直覺化操作 / 莊家自動算 / 一鍵產出戰報</p>
     </header>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        <section class="bg-white rounded-xl shadow-sm p-5 border border-slate-100">
+        <section class="bg-white rounded-xl shadow-sm p-5 border border-slate-200">
             <h2 class="text-lg font-bold mb-4 flex items-center">⚙️ 牌局設定</h2>
             <div class="flex gap-4">
                 <div class="flex-1">
                     <label class="block text-sm font-medium text-slate-700 mb-1">底</label>
-                    <input type="number" id="baseAmount" value="30" min="0" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500" onchange="updateSettings()">
+                    <input type="number" inputmode="numeric" pattern="[0-9]*" id="baseAmount" value="30" min="0" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500" onchange="updateSettings()">
                 </div>
                 <div class="flex-1">
                     <label class="block text-sm font-medium text-slate-700 mb-1">一台</label>
-                    <input type="number" id="pointAmount" value="10" min="0" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500" onchange="updateSettings()">
+                    <input type="number" inputmode="numeric" pattern="[0-9]*" id="pointAmount" value="10" min="0" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500" onchange="updateSettings()">
                 </div>
             </div>
             <p class="text-xs text-slate-500 mt-2 text-center" id="settingDisplay">目前設定：30 底 / 10 台</p>
         </section>
 
-        <section class="bg-white rounded-xl shadow-sm p-5 border border-slate-100">
+        <section class="bg-white rounded-xl shadow-sm p-5 border border-slate-200">
             <h2 class="text-lg font-bold mb-4 flex items-center">👥 新增玩家</h2>
             <div class="flex gap-2">
-                <input type="text" id="newPlayerName" placeholder="輸入玩家姓名..." class="flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500" onkeypress="handleKeyPress(event)">
-                <button onclick="addPlayer()" class="bg-slate-800 text-white px-3 py-2 rounded-lg font-medium hover:bg-slate-700 transition">新增</button>
+                <input type="text" id="newPlayerName" placeholder="輸入玩家姓名..." class="flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500" onkeypress="handleKeyPress(event)">
+                <button onclick="addPlayer()" class="bg-slate-800 text-white px-4 py-2 rounded-lg font-medium hover:bg-slate-700 transition">新增</button>
             </div>
             <p class="text-xs text-slate-500 mt-2">請新增玩家並在下方勾選 4 位上場</p>
         </section>
     </div>
 
-    <section class="bg-white rounded-xl shadow-sm p-5 mb-6 border border-slate-100">
+    <section class="bg-white rounded-xl shadow-sm p-5 mb-6 border border-slate-200">
         <div class="flex justify-between items-center mb-4">
-            <h2 class="text-lg font-bold flex items-center">👑 目前玩家</h2>
-            <span class="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-md font-medium">請勾選上場玩家 (最多4人)</span>
+            <h2 class="text-lg font-bold flex items-center">👑 上場名單</h2>
+            <span class="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded-md font-medium">請勾選上場玩家 (最多4人)</span>
         </div>
         <div id="playersGrid" class="grid grid-cols-2 md:grid-cols-4 gap-3">
             </div>
     </section>
 
-    <section class="bg-white rounded-xl shadow-sm p-5 mb-6 border border-slate-100">
-        <h2 class="text-lg font-bold mb-4">📝 記帳面板</h2>
+    <section class="bg-white rounded-xl shadow-sm p-5 mb-6 border border-slate-200">
+        <h2 class="text-lg font-bold mb-4">📝 結算面板</h2>
         
-        <div class="mb-6 p-4 bg-red-50 rounded-lg text-center">
-            <button id="voiceBtn" onclick="toggleVoice()" class="bg-red-500 text-white w-16 h-16 rounded-full text-2xl shadow-lg hover:bg-red-600 transition flex items-center justify-center mx-auto mb-3 btn-disabled" disabled>
-                🎙️
-            </button>
-            <p id="voiceStatus" class="text-sm text-red-700 font-medium">請先勾選上場玩家後啟用</p>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4 items-end">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
             <div class="col-span-1 md:col-span-4 mb-2 flex flex-col md:flex-row gap-4 bg-yellow-50 p-4 rounded-lg border border-yellow-300">
                 <div class="flex-1">
-                    <label class="block text-sm font-bold text-yellow-700 mb-1">🔸 目前莊家</label>
+                    <label class="block text-sm font-bold text-yellow-800 mb-1">🔸 目前莊家</label>
                     <select id="dealerSelect" class="w-full px-3 py-2 border border-yellow-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 bg-white" onchange="updateDealer()" disabled></select>
                 </div>
                 <div class="w-full md:w-32">
-                    <label class="block text-sm font-bold text-yellow-700 mb-1">連莊次數</label>
-                    <div class="flex items-center gap-2">
-                        <input type="number" id="dealerStreak" min="0" value="0" class="w-full px-3 py-2 border border-yellow-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500" oninput="updateStreak()">
-                    </div>
+                    <label class="block text-sm font-bold text-yellow-800 mb-1">連莊次數</label>
+                    <input type="number" inputmode="numeric" pattern="[0-9]*" id="dealerStreak" min="0" value="0" class="w-full px-3 py-2 border border-yellow-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500" oninput="updateStreak()">
                 </div>
                 <div class="w-full md:w-auto flex items-end">
-                    <p class="text-xs text-yellow-700 pb-2">牽涉莊家時自動加算<br><span id="dealerTaiHint" class="font-bold text-red-600">1</span> 台</p>
+                    <p class="text-xs text-yellow-700 pb-2">牽涉莊家時自動加算 <span id="dealerTaiHint" class="font-bold text-red-600">1</span> 台</p>
                 </div>
             </div>
             
-            <div class="col-span-1 md:col-span-1">
-                <label class="block text-sm font-medium text-slate-700 mb-1">贏家 (胡/自摸)</label>
-                <select id="winnerSelect" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-slate-50" disabled></select>
+            <div class="col-span-1 md:col-span-2">
+                <label class="block text-sm font-medium text-slate-700 mb-1">贏家</label>
+                <select id="winnerSelect" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500 bg-slate-50" disabled></select>
             </div>
-            <div class="col-span-1 md:col-span-1">
-                <label class="block text-sm font-medium text-slate-700 mb-1">輸家 (放槍)</label>
-                <select id="loserSelect" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-slate-50" disabled></select>
+            <div class="col-span-1 md:col-span-2">
+                <label class="block text-sm font-medium text-slate-700 mb-1">輸家 (若自摸則無需理會此欄)</label>
+                <select id="loserSelect" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500 bg-slate-50" disabled></select>
             </div>
-            <div class="col-span-1 md:col-span-1">
-                <label class="block text-sm font-medium text-slate-700 mb-1">贏了幾台？(不含莊家台)</label>
+            
+            <div class="col-span-1 md:col-span-4">
+                <label class="block text-sm font-medium text-slate-700 mb-1">牌型台數 (不含莊家台)</label>
                 <div class="flex items-center gap-2">
-                    <input type="number" id="taiInput" min="0" value="1" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500" oninput="calculatePreview()">
-                    <span class="text-sm text-slate-600">台</span>
+                    <input type="number" inputmode="numeric" pattern="[0-9]*" id="taiInput" min="0" value="1" class="w-full px-3 py-3 text-lg border rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500 text-center" oninput="calculatePreview()">
+                    <span class="text-sm text-slate-600 whitespace-nowrap">台</span>
+                    <div class="ml-auto text-right whitespace-nowrap pl-4">
+                        <span class="text-xs text-slate-500 block">閒家單獨給付金額</span>
+                        <span id="previewAmount" class="text-2xl font-bold text-slate-800">40</span>
+                    </div>
                 </div>
             </div>
-            <div class="col-span-1 md:col-span-1 text-right md:text-center pb-2">
-                <span class="text-xs text-slate-500 block">單家閒家基本金額</span>
-                <span id="previewAmount" class="text-xl font-bold text-red-600">40</span>
-            </div>
         </div>
-        <button id="recordBtn" onclick="manualRecord()" class="w-full bg-red-600 text-white py-3 rounded-lg font-bold hover:bg-red-700 transition btn-disabled" disabled>確認記帳</button>
+
+        <div class="grid grid-cols-3 gap-3 mt-6">
+            <button id="btnDiscard" onclick="recordTransaction('discard')" class="col-span-1 bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition btn-disabled" disabled>🎯 放槍結算</button>
+            <button id="btnSelfDrawn" onclick="recordTransaction('selfDrawn')" class="col-span-1 bg-red-600 text-white py-3 rounded-lg font-bold hover:bg-red-700 transition btn-disabled" disabled>🔥 自摸結算</button>
+            <button id="btnDraw" onclick="recordTransaction('draw')" class="col-span-1 bg-slate-600 text-white py-3 rounded-lg font-bold hover:bg-slate-700 transition btn-disabled" disabled>🤝 流局 (連莊+1)</button>
+        </div>
     </section>
 
-    <section class="bg-white rounded-xl shadow-sm p-5 border border-slate-100">
+    <section class="bg-white rounded-xl shadow-sm p-5 border border-slate-200">
         <div class="flex justify-between items-center mb-4">
             <h2 class="text-lg font-bold">📜 交易紀錄</h2>
-            <button onclick="clearHistory()" class="text-sm text-slate-400 hover:text-red-500 transition">清空紀錄</button>
+            <div class="space-x-2">
+                <button onclick="copyReport()" class="text-sm bg-green-100 text-green-700 px-3 py-1.5 rounded-lg hover:bg-green-200 transition font-medium">📋 複製戰報</button>
+                <button onclick="clearHistory()" class="text-sm text-slate-400 hover:text-red-500 transition px-2">清空</button>
+            </div>
         </div>
         <ul id="historyLog" class="space-y-2 max-h-80 overflow-y-auto pr-2">
             <li class="text-slate-400 text-sm text-center py-4">目前尚無紀錄</li>
@@ -119,7 +113,6 @@
     </section>
 
     <script>
-        // 初始化：優先從 localStorage 讀取資料
         let players = JSON.parse(localStorage.getItem('mahjong_players')) || [];
         let activePlayerIds = JSON.parse(localStorage.getItem('mahjong_active_players')) || [];
         let history = JSON.parse(localStorage.getItem('mahjong_history')) || [];
@@ -140,58 +133,6 @@
             localStorage.setItem('mahjong_point', pointAmount);
             if(currentDealerId) localStorage.setItem('mahjong_dealer', currentDealerId);
             localStorage.setItem('mahjong_streak', dealerStreak);
-        }
-
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        let recognition = null;
-        let isRecording = false;
-
-        if (SpeechRecognition) {
-            recognition = new SpeechRecognition();
-            recognition.lang = 'zh-TW';
-            recognition.interimResults = false;
-            recognition.maxAlternatives = 1;
-
-            recognition.onstart = function() {
-                isRecording = true;
-                const btn = document.getElementById('voiceBtn');
-                btn.classList.add('recording');
-                document.getElementById('voiceStatus').innerText = "聆聽中... 請說話 (例如：小明自摸兩台)";
-            };
-
-            recognition.onresult = function(event) {
-                const transcript = event.results[0][0].transcript;
-                document.getElementById('voiceStatus').innerText = `辨識結果：「${transcript}」`;
-                processVoiceCommand(transcript);
-            };
-
-            recognition.onerror = function(event) {
-                document.getElementById('voiceStatus').innerText = "語音辨識錯誤，請重試或手動輸入。";
-                stopVoiceUI();
-            };
-
-            recognition.onend = function() {
-                stopVoiceUI();
-            };
-        }
-
-        function toggleVoice() {
-            if (!recognition || activePlayerIds.length < 2) return;
-            if (isRecording) {
-                recognition.stop();
-            } else {
-                recognition.start();
-            }
-        }
-
-        function stopVoiceUI() {
-            isRecording = false;
-            document.getElementById('voiceBtn').classList.remove('recording');
-            setTimeout(() => {
-                if(!isRecording && activePlayerIds.length >= 2) {
-                    document.getElementById('voiceStatus').innerText = "點擊麥克風開始語音記帳";
-                }
-            }, 4000);
         }
 
         function generateId() {
@@ -248,7 +189,6 @@
             const newDealerId = document.getElementById('dealerSelect').value;
             if (currentDealerId !== newDealerId) {
                 currentDealerId = newDealerId;
-                // 換莊家時自動將連莊次數歸零
                 if(newDealerId !== "") {
                     dealerStreak = 0;
                     document.getElementById('dealerStreak').value = 0;
@@ -260,40 +200,17 @@
 
         function updateUIState() {
             const isReady = activePlayerIds.length >= 2;
-            const winnerSelect = document.getElementById('winnerSelect');
-            const loserSelect = document.getElementById('loserSelect');
-            const dealerSelect = document.getElementById('dealerSelect');
-            const dealerStreakInput = document.getElementById('dealerStreak');
-            const recordBtn = document.getElementById('recordBtn');
-            const voiceBtn = document.getElementById('voiceBtn');
-            const voiceStatus = document.getElementById('voiceStatus');
-
-            winnerSelect.disabled = !isReady;
-            loserSelect.disabled = !isReady;
-            dealerSelect.disabled = !isReady;
-            dealerStreakInput.disabled = !isReady;
-            recordBtn.disabled = !isReady;
+            const controls = ['winnerSelect', 'loserSelect', 'dealerSelect', 'dealerStreak', 'btnDiscard', 'btnSelfDrawn', 'btnDraw'];
             
-            if (isReady) {
-                winnerSelect.classList.remove('bg-slate-50');
-                loserSelect.classList.remove('bg-slate-50');
-                dealerSelect.classList.remove('bg-white');
-                recordBtn.classList.remove('btn-disabled');
-                
-                if (SpeechRecognition) {
-                    voiceBtn.disabled = false;
-                    voiceBtn.classList.remove('btn-disabled', 'opacity-50', 'cursor-not-allowed');
-                    voiceStatus.innerText = "點擊麥克風開始語音記帳";
+            controls.forEach(id => {
+                const el = document.getElementById(id);
+                el.disabled = !isReady;
+                if(isReady) {
+                    el.classList.remove('btn-disabled', 'bg-slate-50', 'bg-white');
+                } else {
+                    el.classList.add('btn-disabled');
                 }
-            } else {
-                winnerSelect.classList.add('bg-slate-50');
-                loserSelect.classList.add('bg-slate-50');
-                dealerSelect.classList.add('bg-white');
-                recordBtn.classList.add('btn-disabled');
-                voiceBtn.disabled = true;
-                voiceBtn.classList.add('btn-disabled');
-                voiceStatus.innerText = "請先勾選至少兩名上場玩家";
-            }
+            });
         }
 
         function renderPlayers() {
@@ -317,8 +234,8 @@
                     const isActive = activePlayerIds.includes(p.id);
                     const isDealer = (currentDealerId === p.id);
                     grid.innerHTML += `
-                        <div class="bg-slate-50 p-3 rounded-lg border text-center relative group transition-all ${isActive ? 'ring-2 ring-red-500 bg-red-50/30' : ''}">
-                            <input type="checkbox" class="absolute top-2 left-2 w-4 h-4 cursor-pointer accent-red-600" onchange="toggleActivePlayer('${p.id}')" ${isActive ? 'checked' : ''} title="勾選上場">
+                        <div class="bg-slate-50 p-3 rounded-lg border text-center relative group transition-all ${isActive ? 'ring-2 ring-slate-800 bg-slate-200' : ''}">
+                            <input type="checkbox" class="absolute top-2 left-2 w-4 h-4 cursor-pointer accent-slate-800" onchange="toggleActivePlayer('${p.id}')" ${isActive ? 'checked' : ''} title="勾選上場">
                             <button onclick="removePlayer('${p.id}')" class="absolute -top-2 -right-2 bg-red-100 text-red-600 rounded-full w-6 h-6 text-xs hidden group-hover:block hover:bg-red-200 shadow-sm z-10">✕</button>
                             <div class="font-bold text-slate-700 truncate mt-1" title="${p.name}">
                                 ${isDealer ? '👑 ' : ''}${p.name}
@@ -336,8 +253,8 @@
                     dealerSelect.innerHTML = '<option value="">請勾選上場玩家</option>';
                 } else {
                     winnerSelect.innerHTML = '';
+                    loserSelect.innerHTML = '';
                     dealerSelect.innerHTML = '<option value="">無 (尚未設定莊家)</option>';
-                    loserSelect.innerHTML = '<option value="all">一家贏，其餘全輸 (自摸)</option>';
                     activePlayersList.forEach(p => {
                         winnerSelect.innerHTML += `<option value="${p.id}">${p.name}</option>`;
                         loserSelect.innerHTML += `<option value="${p.id}">${p.name}</option>`;
@@ -346,7 +263,7 @@
                 }
 
                 if (currentWinner && activePlayersList.find(p => p.id === currentWinner)) winnerSelect.value = currentWinner;
-                if (currentLoser && (currentLoser === 'all' || activePlayersList.find(p => p.id === currentLoser))) loserSelect.value = currentLoser;
+                if (currentLoser && activePlayersList.find(p => p.id === currentLoser)) loserSelect.value = currentLoser;
                 if (currentDealerId && activePlayersList.find(p => p.id === currentDealerId)) {
                     dealerSelect.value = currentDealerId;
                 } else {
@@ -354,7 +271,7 @@
                 }
             }
 
-            updateStreak(); // 更新提示字元
+            updateStreak(); 
             updateUIState();
         }
 
@@ -370,7 +287,7 @@
                         <div class="mb-1">${h.text}</div>
                         <div class="text-xs text-slate-400">${h.time}</div>
                     </div>
-                    <button onclick="deleteRecord('${h.id}')" class="text-xs text-red-500 bg-red-100 px-3 py-1.5 rounded-lg hover:bg-red-500 hover:text-white transition shrink-0 font-medium">刪除</button>
+                    <button onclick="deleteRecord('${h.id}')" class="text-xs text-red-500 bg-red-100 px-3 py-1.5 rounded-lg hover:bg-red-500 hover:text-white transition shrink-0 font-medium">還原</button>
                 </li>
             `).join('');
         }
@@ -415,28 +332,43 @@
             saveData(); 
         }
 
-        // ====== 核心交易與連莊台計算邏輯 ======
-        function processTransaction(winnerId, loserId, tais) {
-            if (activePlayerIds.length < 2) {
-                alert("上場人數不足！");
-                return false;
+        // ====== 統合按鈕邏輯 ======
+        function recordTransaction(type) {
+            if (activePlayerIds.length < 2) return alert("上場人數不足！");
+            
+            if (type === 'draw') {
+                if(!currentDealerId) return alert("請先設定莊家才能流局連莊！");
+                dealerStreak++;
+                document.getElementById('dealerStreak').value = dealerStreak;
+                updateStreak();
+                
+                const time = new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' });
+                history.unshift({ 
+                    id: generateId(), 
+                    text: `【流局】無人胡牌，莊家連莊次數 +1 (目前連 ${dealerStreak})`, 
+                    time: time, 
+                    changes: [],
+                    type: 'draw'
+                });
+                renderHistory();
+                saveData();
+                return;
             }
-            if (isNaN(tais) || tais < 0) {
-                alert("無效的台數！");
-                return false;
-            }
+
+            const winnerId = document.getElementById('winnerSelect').value;
+            const loserId = document.getElementById('loserSelect').value;
+            const tais = parseInt(document.getElementById('taiInput').value);
+
+            if (isNaN(tais) || tais < 0) return alert("無效的台數！");
 
             const winner = players.find(p => p.id === winnerId);
             let logText = "";
             let changes = []; 
             let totalWinAmount = 0;
 
-            if (loserId === "all") {
-                // 自摸邏輯
+            if (type === 'selfDrawn') {
                 const payingPlayers = players.filter(p => activePlayerIds.includes(p.id) && p.id !== winnerId);
-                
                 payingPlayers.forEach(p => {
-                    // 若贏家或付款者其中一方為莊家，計算連莊加台 (1 + 2n)
                     let isDealerInvolved = (winnerId === currentDealerId || p.id === currentDealerId);
                     let dealerExtraTais = isDealerInvolved ? (1 + 2 * dealerStreak) : 0;
                     let finalTais = tais + dealerExtraTais;
@@ -455,17 +387,12 @@
                      let noteText = (winnerId === currentDealerId) ? "莊家自摸" : "莊家付費";
                      dealerNote = dealerStreak > 0 ? ` (含${noteText}連${dealerStreak}加${1 + 2 * dealerStreak}台)` : ` (含${noteText}+1台)`;
                 }
-
                 logText = `【自摸】${winner.name} ${tais}台${dealerNote}，贏得 ${totalWinAmount} 點`;
-            } else {
-                // 放槍邏輯
-                if (winnerId === loserId) {
-                    alert("贏家和輸家不能是同一人！");
-                    return false;
-                }
+
+            } else if (type === 'discard') {
+                if (winnerId === loserId) return alert("贏家和輸家不能是同一人！");
                 const loser = players.find(p => p.id === loserId);
                 
-                // 若贏家或輸家其中一方為莊家，計算連莊加台 (1 + 2n)
                 let isDealerInvolved = (winnerId === currentDealerId || loserId === currentDealerId);
                 let dealerExtraTais = isDealerInvolved ? (1 + 2 * dealerStreak) : 0;
                 let finalTais = tais + dealerExtraTais;
@@ -477,51 +404,39 @@
                 changes.push({ playerId: winner.id, amount: amount });
                 changes.push({ playerId: loser.id, amount: -amount });
                 
-                let dealerNote = "";
-                if (isDealerInvolved) {
-                    dealerNote = dealerStreak > 0 ? ` (含莊家連${dealerStreak}加${1 + 2 * dealerStreak}台)` : ` (含莊家台+1)`;
-                }
+                let dealerNote = isDealerInvolved ? (dealerStreak > 0 ? ` (含莊家連${dealerStreak}加${1 + 2 * dealerStreak}台)` : ` (含莊家台+1)`) : "";
                 logText = `【放槍】${loser.name} 放槍給 ${winner.name} ${tais}台${dealerNote}，支付 ${amount} 點`;
             }
 
             const time = new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' });
-            history.unshift({ id: generateId(), text: logText, time: time, changes: changes });
+            history.unshift({ id: generateId(), text: logText, time: time, changes: changes, type: type });
             
+            document.getElementById('taiInput').value = 1;
+            calculatePreview();
             renderPlayers();
             renderHistory();
             saveData(); 
-            return true;
         }
 
-        function manualRecord() {
-            const winnerId = document.getElementById('winnerSelect').value;
-            const loserId = document.getElementById('loserSelect').value;
-            const tais = parseInt(document.getElementById('taiInput').value);
-            
-            if (processTransaction(winnerId, loserId, tais)) {
-                 document.getElementById('taiInput').value = 1;
-                 calculatePreview();
-            }
-        }
-
-        // 單筆紀錄刪除機制 (反悔)
         function deleteRecord(historyId) {
-            if (!confirm("確定要刪除這筆紀錄嗎？被扣除或增加的分數將會自動退回。\n(注意：連莊次數不會自動倒退，請視情況手動調整)")) return;
-            
             const recordIndex = history.findIndex(h => h.id === historyId);
             if (recordIndex === -1) return;
-            
             const record = history[recordIndex];
-            
-            record.changes.forEach(change => {
-                const player = players.find(p => p.id === change.playerId);
-                if (player) {
-                    player.score -= change.amount; 
-                }
-            });
+
+            if (record.type === 'draw') {
+                 if (!confirm("確定要取消這次流局嗎？連莊次數將會 -1。")) return;
+                 if (dealerStreak > 0) dealerStreak--;
+                 document.getElementById('dealerStreak').value = dealerStreak;
+                 updateStreak();
+            } else {
+                 if (!confirm("確定要刪除這筆紀錄並還原分數嗎？\n(連莊次數不會自動倒退，請視情況手動調整)")) return;
+                 record.changes.forEach(change => {
+                    const player = players.find(p => p.id === change.playerId);
+                    if (player) player.score -= change.amount; 
+                 });
+            }
             
             history.splice(recordIndex, 1);
-            
             renderPlayers();
             renderHistory();
             saveData();
@@ -532,67 +447,38 @@
             if (confirm("這將會清除所有歷史紀錄並將大家的分數歸零，確定執行？")) {
                 players.forEach(p => p.score = 0);
                 history = [];
+                dealerStreak = 0;
+                document.getElementById('dealerStreak').value = 0;
+                updateStreak();
                 renderPlayers();
                 renderHistory();
                 saveData(); 
             }
         }
 
-        function processVoiceCommand(text) {
-            if (activePlayerIds.length < 2) return;
+        function copyReport() {
+            if (players.length === 0) return alert("目前沒有玩家紀錄");
+            const date = new Date().toLocaleDateString('zh-TW');
+            let report = `🀄 麻將結算戰報 (${date})\n`;
+            report += `設定：${baseAmount} 底 / ${pointAmount} 台\n`;
+            report += `--------------------\n`;
             
-            const numMap = { '一': 1, '二': 2, '兩': 2, '三': 3, '四': 4, '五': 5, '六': 6, '七': 7, '八': 8, '九': 9, '十': 10 };
-            let tais = null;
-            
-            const numMatch = text.match(/\d+/);
-            if (numMatch) {
-                tais = parseInt(numMatch[0]);
-            } else {
-                for (let key in numMap) {
-                    if (text.includes(key + "台") || text.includes(key + "臺") || text.includes(key + "台")) {
-                        tais = numMap[key];
-                        break;
-                    }
-                }
-            }
+            // 將玩家以分數高低排序
+            let sortedPlayers = [...players].sort((a, b) => b.score - a.score);
+            sortedPlayers.forEach(p => {
+                let sign = p.score > 0 ? '+' : '';
+                report += `${p.name}: ${sign}${p.score}\n`;
+            });
+            report += `--------------------\n總計驗算: ${players.reduce((sum, p) => sum + p.score, 0)} (若非0則代表記錯帳)`;
 
-            if (tais === null) {
-                alert("無法從語音中辨識『台數』，請確認有說出數字（如：兩台、3台）。\n注意：只要說本身的台數即可，系統會自動加上連莊台。");
-                return;
-            }
-
-            const activePlayersList = players.filter(p => activePlayerIds.includes(p.id));
-            const mentioned = activePlayersList.filter(p => text.includes(p.name));
-
-            if (text.includes("自摸")) {
-                if (mentioned.length >= 1) {
-                    processTransaction(mentioned[0].id, "all", tais);
-                } else {
-                    alert("無法辨識自摸的玩家是誰，或該玩家未勾選上場。");
-                }
-            } else if (text.includes("放槍") || text.includes("給") || text.includes("打給")) {
-                if (mentioned.length >= 2) {
-                    const idx1 = text.indexOf(mentioned[0].name);
-                    const idx2 = text.indexOf(mentioned[1].name);
-                    
-                    let loser, winner;
-                    if (idx1 < idx2) {
-                        loser = mentioned[0];
-                        winner = mentioned[1];
-                    } else {
-                        loser = mentioned[1];
-                        winner = mentioned[0];
-                    }
-                    processTransaction(winner.id, loser.id, tais);
-                } else {
-                    alert("無法同時辨識出放槍者與胡牌者，或有玩家未勾選上場。");
-                }
-            } else {
-                alert("無法解析指令動作，請明確說出「自摸」或「放槍給」。");
-            }
+            navigator.clipboard.writeText(report).then(() => {
+                alert("✅ 戰報已複製！您可以直接貼上至 LINE 群組。");
+            }).catch(err => {
+                alert("複製失敗，請手動確認分數。");
+            });
         }
 
-        // 頁面載入時的初始化執行
+        // 初始化
         updateSettings();
         renderPlayers();
         renderHistory();
